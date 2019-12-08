@@ -4,7 +4,7 @@ var path = require("path");
 var parser = require("body-parser");
 
 var server = express();
-const PORT = process.env.PORT//sets up dynamic port
+const PORT = process.env.PORT || 3000;//sets up dynamic port
 server.use(parser.json()); //used to parse request content
 server.use(parser.urlencoded({ extended: true })); //used to parse encoded requests in url
 
