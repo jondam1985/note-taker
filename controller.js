@@ -1,37 +1,78 @@
 var express = require("express");
 var fs = require("fs");
 var path = require("path");
+var parser = require("body-parser");
 
 var server = express();
 const PORT = 3000;
+server.use(parser.json());
+server.use(parser.urlencoded({ extended: true }));
 
-server.get("/", function(req, res) {
-    res.sendFile(path.join(__dirname, "./Develop/public/index.html"))
+
+server.listen(PORT, function () {
+    console.log("Server listening on PORT " + PORT);
 })
 
-server.get("/notes", function(req, res) {
-    res.sendFile(path.join(__dirname, "./Develop/public/notes.html"))
+server.get("/", function (req, res) {
+    res.sendFile(path.join(__dirname, "./public/index.html"))
 })
 
-server.use("/static", express.static(__dirname + "Develop/public/assets/css"));
-server.use("/static", express.static(__dirname + "Develop/public/assets/js"));
+server.get("/notes", function (req, res) {
+    res.sendFile(path.join(__dirname, "./public/notes.html"))
+})
 
-server.get("/api/notes", function(req, res) {
-    var notes = (fs.readFile("./Develop/db/db.json", function(error) {
+server.use(express.static(__dirname + "/public"));
+
+server.get("/api/notes", function (req, res) {
+    var notes = (fs.readFileSync("./db/db.json", function (error) {
         if (error) { throw error };
     }))
-    res.json(notes);
+    res.send(JSON.parse(notes));
 })
 
+server.post("/api/notes", function (req, res) {
+    var title = req.body.title;
+    var text = req.body.text;
+    var id = Math.random();
 
-server.listen(PORT, function() {
-    console.log("Server listening on PORT " + PORT);
-  })
+    var notes = JSON.parse((fs.readFileSync("./db/db.json", function (error) {
+        if (error) { throw error };
+    })))
 
-function notes() {(fs.readFile("./Develop/db/db.json", function(error, res) {
-    var read = JSON.parse(res);
-    console.log(read);
-    console.log(read[0].title);
-}))};
+    notes.push(
+        {
+            "title": title,
+            "text": text,
+            "id": id
+        }
+    );
 
-notes();
+    fs.writeFileSync("./db/db.json", JSON.stringify(notes), function (error) {
+        if (error) throw error;
+    })
+
+    res.send(notes);
+})
+
+server.delete("/api/notes/:id", function(req, res) {
+    var toBeDeleted = req.params.id;
+    console.log(toBeDeleted);
+
+    var notes = JSON.parse((fs.readFileSync("./db/db.json", function (error) {
+        if (error) { throw error };
+    })))
+    console.log(typeof notes);
+    console.log(notes[0].id);
+
+    for (var i = 0; i < notes.length; i++) {
+        if (notes[i].id == toBeDeleted) {
+            notes.splice(i, 1);
+        }
+    }
+    fs.writeFileSync("./db/db.json", JSON.stringify(notes), function (error) {
+        if (error) throw error;
+    })
+
+    res.send(notes);
+    
+})
